@@ -1,0 +1,220 @@
+<!DOCTYPE html5>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+	<title>Drone</title>
+	<!-- References: 
+		http://jsfiddle.net/Xw29r/15/
+		http://stackoverflow.com/questions/5366325/problem-with-jerky-animation-in-jquery 
+	-->
+
+	<style>
+
+		html{
+			background-image: url(images/background.jpg);
+		    background-attachment: fixed;
+	        background-size: cover;
+		    background-position: center center;
+		    background-repeat: no-repeat;
+		    z-index: -3;
+			height: 100%;
+			width: 100%;
+			overflow: auto;
+		}
+
+		}
+		body {
+			background-color: #ffffff;
+			height: 100%;
+			width: 100%;
+			overflow: auto;
+		}
+
+		div.a {
+			position: fixed;
+			height: 100px;
+			width: 100px;
+			max-width: 100%;
+			cursor: hand;
+			z-index: 999;
+			-webkit-tap-highlight-color:transparent;
+		}
+
+		img.drone {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			z-index: -999;
+		}
+
+		img.image {
+			position: absolute;
+			top: 25%;
+			left: 25%;
+			width: 49.2%;
+			height: 49.2%;
+			z-index: -999;
+		}
+
+		img{-webkit-user-drag: none;}
+
+		/* Smartphones (portrait and landscape) ----------- */
+		@media only screen 
+		and (min-device-width : 320px) 
+		and (max-device-width : 480px) {
+		/* Styles */
+			div.a {
+				height: 50px;
+				width: 50px;
+			}
+		}
+
+	</style>
+
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+	<script type="text/javascript" src="js/QTransform.js"></script>
+	<script type="text/javascript" src="js/toe.js"></script>
+
+</head>
+
+<body>
+
+	<script>
+
+		var images_path = 'images/';
+		var last_time = (new Date()).getTime();
+
+		var image = {'i_src': 'skyward-logo.png', 'i_name': 'Skyward IO'};
+
+		$(document).ready(function(){
+			
+			document.body.style.webkitTouchCallout='none';
+
+			var io = new icon_obj();
+			io.createNewFace(image.i_src, [150,150], image.i_name);
+			io.moveDrone();
+			io.rotateDrone();
+
+			function clickDrone(e){
+				
+				var io = new icon_obj();
+				
+				if($(e.target).hasClass('drone') || $(e.target).hasClass('image')){
+					current_position = $(e.target).parent().position();
+				}else{
+					current_position = $(e.target).position();
+				}
+				
+				io.createNewFace(image.i_src, [150,150], image.i_name, current_position);
+				io.moveDrone();
+				io.rotateDrone();
+				
+			}
+
+			$(document).on('click', 'div.a', function(e){
+				var time = (new Date()).getTime()
+				if(time - last_time > 500){
+					clickDrone(e);
+				}
+			})
+
+			$(document).on('tap', 'div.a', function(e){
+				var time = (new Date()).getTime()
+				clickDrone(e);
+				last_time = time;
+				
+			})
+
+		})
+
+		var icon_obj = function(){
+
+			var that = this;
+
+			that.elem = [];
+			that.oldq = [];
+			that.newq = [];
+
+			that.speed = 0;
+			that.angle = 0;
+			that.speedmodifier = 0.1;
+
+			//
+
+			that.createNewFace = function(i_src, size, i_name, last_position){
+				var icon = '<div class="a"><img class="drone" src="' + images_path + 'drone_template_white.png"><img class="image" src="' + images_path + i_src + '""></div>';
+				$('body').append(icon);
+				that.elem = $('body>div.a').last();
+
+				if(last_position != undefined){
+					that.elem.css({top: last_position.top, left: last_position.left});
+				}
+			};
+
+			that.getOldPosition = function(){
+				var oldq = that.elem.offset();
+				that.oldq = [oldq.top, oldq.left];
+			};
+
+			that.makeNewPosition = function(){
+				var h = $(window).height() - 50;
+				var w = $(window).width() - 50;
+
+				var nh = Math.floor(Math.random() * h);
+				var nw = Math.floor(Math.random() * w);
+
+				that.newq = [nh, nw];
+			};
+
+			that.calculateSpeed = function(){
+				var x = Math.abs(that.oldq[1] - that.newq[1]);
+				var y = Math.abs(that.oldq[0] - that.newq[0]);
+
+				var greatest = x > y ? x : y;
+
+				that.speed = Math.ceil(greatest/that.speedmodifier);
+			};
+
+			that.getNewAngle = function(){
+				that.angle = Math.random() * (360 - 0) + 0;
+			};
+
+			that.moveDrone = function(){
+				
+				that.makeNewPosition();
+				that.getOldPosition();
+				that.calculateSpeed();
+
+				that.elem.animate(
+					{	
+						top: that.newq[0],
+						left: that.newq[1]
+					},
+					that.speed,
+					function(){
+						that.moveDrone();
+					}
+				);
+			};
+
+			that.rotateDrone = function(){
+				that.getNewAngle();
+				$(that.elem.children()[0]).animate(
+					{	
+						rotate: that.angle + 'deg'
+					},
+					2000,
+					function(){
+						that.rotateDrone();
+					}	
+				)
+			}
+		};
+
+	</script>
+	<span id="debug"</span>
+</body>
+</html>
